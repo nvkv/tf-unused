@@ -1,0 +1,10 @@
+[package]
+name = "tf-unused"
+version = "1.201909.1"
+authors = ["Semyon Novikov <novikov@fastmail.com>"]
+edition = "2018"
+
+[dependencies]
+regex = "1"
+glob = "0.3"
+clap = "2"

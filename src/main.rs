@@ -93,15 +93,20 @@ fn main() {
         }
     }
 
-    let res = definitions
+    let unused_vars: Vec<&Variable> = definitions
         .iter()
-        .filter(|var| usages.iter().find(|usage| var.name == usage.name).is_none());
+        .filter(|var| usages.iter().find(|usage| var.name == usage.name).is_none())
+        .collect();
 
-    for unused in res {
+    for unused in unused_vars.iter() {
         println!(
             "Unused variable \"{}\" defined in {}",
             unused.name, unused.defined_in
         );
+    }
+
+    if unused_vars.len() > 0 {
+        process::exit(1)
     }
 }
 

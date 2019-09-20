@@ -26,19 +26,21 @@ fn find_var_definitions(file: &Path, text: &str) -> Vec<Variable> {
     let re =
         Regex::new(VAR_DECLARATION_PATTERN).expect("Failed to compile variable declaration regex");
     re.captures_iter(text)
+        .filter(|cap| cap.len() > 1)
         .map(|cap| Variable {
             name: cap[1].to_string(),
-            defined_in: file.to_str().unwrap().to_string(),
+            defined_in: file.to_str().unwrap_or("unknown").to_string(),
         })
         .collect()
 }
 
 fn find_var_usages(file: &Path, text: &str) -> Vec<VarUse> {
-    let re = Regex::new(VAR_USE_PATTERN).expect("Failed to compile variable usage regex");;
+    let re = Regex::new(VAR_USE_PATTERN).expect("Failed to compile variable usage regex");
     re.captures_iter(text)
+        .filter(|cap| cap.len() > 1)
         .map(|cap| VarUse {
             name: cap[1].to_string(),
-            found_in: file.to_str().unwrap().to_string(),
+            found_in: file.to_str().unwrap_or("unknown").to_string(),
         })
         .collect()
 }

@@ -5,6 +5,8 @@ use std::process;
 use clap::{App, Arg};
 use glob::glob;
 use regex::Regex;
+#[macro_use]
+extern crate lazy_static;
 
 const VAR_DECLARATION_PATTERN: &str = r#"variable\s+"([\w_]+)"\s+\{"#;
 const VAR_USE_PATTERN: &str = r#"var\.([\w_]+)"#;
@@ -23,9 +25,13 @@ struct VarUse {
 }
 
 fn find_var_definitions(file: &Path, text: &str) -> Vec<Variable> {
-    let re =
-        Regex::new(VAR_DECLARATION_PATTERN).expect("Failed to compile variable declaration regex");
-    re.captures_iter(text)
+    lazy_static! {
+        static ref VAR_DECLARATION_REGEX: Regex = Regex::new(VAR_DECLARATION_PATTERN)
+            .expect("Failed to compile variable declaration regex");
+    }
+
+    VAR_DECLARATION_REGEX
+        .captures_iter(text)
         .filter(|cap| cap.len() > 1)
         .map(|cap| Variable {
             name: cap[1].to_string(),
@@ -35,8 +41,12 @@ fn find_var_definitions(file: &Path, text: &str) -> Vec<Variable> {
 }
 
 fn find_var_usages(file: &Path, text: &str) -> Vec<VarUse> {
-    let re = Regex::new(VAR_USE_PATTERN).expect("Failed to compile variable usage regex");
-    re.captures_iter(text)
+    lazy_static! {
+        static ref VAR_USE_REGEX: Regex =
+            Regex::new(VAR_USE_PATTERN).expect("Failed to compile variable usage regex");
+    }
+    VAR_USE_REGEX
+        .captures_iter(text)
         .filter(|cap| cap.len() > 1)
         .map(|cap| VarUse {
             name: cap[1].to_string(),

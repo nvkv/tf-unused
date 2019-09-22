@@ -1,5 +1,7 @@
 # tf-unused
 
+[![Build Status](https://travis-ci.org/nvkv/tf-unused.svg?branch=master)](https://travis-ci.org/nvkv/tf-unused)
+
 Find unused variables in terraform module.
 
 ## Installation

@@ -29,7 +29,6 @@ fn find_var_definitions(file: &Path, text: &str) -> Vec<Variable> {
         static ref VAR_DECLARATION_REGEX: Regex = Regex::new(VAR_DECLARATION_PATTERN)
             .expect("Failed to compile variable declaration regex");
     }
-
     VAR_DECLARATION_REGEX
         .captures_iter(text)
         .filter(|cap| cap.len() > 1)
@@ -93,12 +92,11 @@ fn main() {
     let glob_results = glob(tf_glob).expect("Failed to read glob pattern");
     for tf_file in glob_results {
         if let Ok(tf_file) = tf_file {
-            let p = Path::new(working_dir).join(tf_file);
-            if let Ok(content) = fs::read_to_string(&p) {
-                definitions.append(&mut find_var_definitions(&p, &content));
-                usages.append(&mut find_var_usages(&p, &content));
+            if let Ok(content) = fs::read_to_string(&tf_file) {
+                definitions.append(&mut find_var_definitions(&tf_file, &content));
+                usages.append(&mut find_var_usages(&tf_file, &content));
             } else {
-                println!("Cant open file, skipping: {:?}", p);
+                println!("Cant open file, skipping: {:?}", tf_file);
             }
         }
     }
@@ -115,7 +113,7 @@ fn main() {
         );
     }
 
-    if unused_vars.len() > 0 {
+    if unused_vars.iter().len() > 0 {
         process::exit(1)
     }
 }
@@ -129,7 +127,7 @@ mod tests {
         let re = Regex::new(VAR_DECLARATION_PATTERN).unwrap();
         let test_string = r#"
         variable "surprisingly_important_variable" {
-        	default = 42
+            default = 42
         }
         "#;
         assert!(re.is_match(test_string));

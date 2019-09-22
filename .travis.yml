@@ -1,18 +1,33 @@
 language: rust
-
 os:
-  - linux
-  - osx
-
+- linux
+- osx
 rust:
-  - stable
-
+- stable
 cache:
-  - cargo
-
+- cargo
 before_cache:
-  - rm -rf "$TRAVIS_HOME/.cargo/registry/src"
+- rm -rf "$TRAVIS_HOME/.cargo/registry/src"
+jobs:
+  include:
+  - stage: test
+    script:
+    - cargo test --verbose --all
+  - stage: build
+    script:
+    - cargo build --verbose --all --release
+  - stage: prepare artifact
+    script:
+      - mkdir -p tf-unused-$TRAVIS_OS_NAME
+      - cp target/release/tf-unused "./tf-unused-${TRAVIS_OS_NAME}""
+      - tar czf "tf-unused-${TRAVIS_OS_NAME}.tar.gz" "./tf-unused-${TRAVIS_OS_NAME}"
+  - stage: deploy
+    script: skip
+    deploy:
+      provider: releases
+      api_key:
+        secure: $ENCRYPTED_API_KEY
+      file: tf-unused-$TRAVIS_OS_NAME.tar.gz
+      on:
+        tags: true
 
-script:
-  - cargo build --verbose --all
-  - cargo test --verbose --all

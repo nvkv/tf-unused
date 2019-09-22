@@ -16,7 +16,7 @@ function install_musl_target() {
 		echo "Skipping musl target install on non-linux os"
 		return 0
 	fi
-	apt-get install musl-tools -y
+	sudo apt-get install musl-tools -y
 	rustup target add x86_64-unknown-linux-musl
 }
 

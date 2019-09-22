@@ -37,7 +37,7 @@ function build() {
 	if [ "${OS}" == "linux" ]; then
 		build_linux_release
 	elif [ "${OS}" == "osx" ]; then
-		build_mac_release
+		build_osx_release
 	else
 		echo "Unknown OS"
 		exit 1

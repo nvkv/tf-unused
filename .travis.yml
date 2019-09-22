@@ -13,6 +13,11 @@ cache:
 before_cache:
 - rm -rf "$TRAVIS_HOME/.cargo/registry/src"
 
+addons:
+  apt:
+    packages:
+      - musl-tools
+
 script:
   - ./scripts/travis_build.sh ${TRAVIS_OS_NAME}
 

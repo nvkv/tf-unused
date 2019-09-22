@@ -24,7 +24,7 @@ function run_tests() {
 }
 
 function build_osx_release() {
-	cargo build --verbose --all --release
+	cargo build --release
 	cp ./target/release/tf-unused .
 }
 
@@ -54,6 +54,7 @@ function pack_the_binary() {
 	tar czf "tf-unused-${OS}.tar.gz" "./tf-unused-${OS}"
 }
 
+# The Pipeline
 install_musl_target
 run_tests
 build

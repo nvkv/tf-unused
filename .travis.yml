@@ -13,26 +13,17 @@ cache:
 before_cache:
 - rm -rf "$TRAVIS_HOME/.cargo/registry/src"
 
-jobs:
-  include:
+script:
+  - cargo test --verbose --all
+  - cargo build --verbose --all --release
+  - mkdir -p tf-unused-${TRAVIS_OS_NAME}
+  - cp target/release/tf-unused "./tf-unused-${TRAVIS_OS_NAME}"
+  - tar czf "tf-unused-${TRAVIS_OS_NAME}.tar.gz" "./tf-unused-${TRAVIS_OS_NAME}"
 
-    - stage: test
-      script:
-      - cargo test --verbose --all
-
-    - stage: build
-      script:
-      - cargo build --verbose --all --release
-      - mkdir -p tf-unused-${TRAVIS_OS_NAME}
-      - cp target/release/tf-unused "./tf-unused-${TRAVIS_OS_NAME}"
-      - tar czf "tf-unused-${TRAVIS_OS_NAME}.tar.gz" "./tf-unused-${TRAVIS_OS_NAME}"
-
-    - stage: deploy
-      script: skip
-      deploy:
-        provider: releases
-        api_key:
-          secure: $ENCRYPTED_API_KEY
-        file: tf-unused-$TRAVIS_OS_NAME.tar.gz
-        on:
-          tags: true
+deploy:
+  provider: releases
+  api_key:
+    secure: $ENCRYPTED_API_KEY
+  file: ./tf-unused-*.tar.gz
+  on:
+    tags: true

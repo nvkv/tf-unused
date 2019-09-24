@@ -29,7 +29,7 @@ function build_osx_release() {
 }
 
 function build_linux_release() {
-    RUSTFLAGS=-Clinker=musl-gcc cargo build --release --target=x86_64-unknown-linux-musl
+    RUSTFLAGS="-Clinker=musl-gcc" cargo build --release --target=x86_64-unknown-linux-musl
     cp ./target/x86_64-unknown-linux-musl/release/tf-unused .
 }
 

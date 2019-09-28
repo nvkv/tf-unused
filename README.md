@@ -21,8 +21,12 @@ Otherwise nothing will be printed and process will exit with 0.
 
 ```
 % tf-unused tests/fixtures/has_unused/
-Unused variable "legacy_switch_i_forgot_to_remove" defined in tests/fixtures/has_unused/vars.tf
-Unused variable "surprisingly_unimportant_variable" defined in tests/fixtures/has_unused/vars.tf
+In tests/fixtures/has_unused/vars.tf:
+ * Unused definition legacy_switch_i_forgot_to_remove
+ * Unused definition surprisingly_unimportant_variable
+
+In tests/fixtures/has_unused/some.tfvars:
+ * Unused value for some_random_variable
 
 % echo $?
 1

@@ -1,6 +1,6 @@
 [package]
 name = "tf-unused"
-version = "1.201909.1"
+version = "1.201909.7"
 authors = ["Semyon Novikov <nsa@bedlam.io>"]
 edition = "2018"
 

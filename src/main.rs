@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process;
 
 use clap::{App, Arg};
@@ -10,105 +10,112 @@ use regex::Regex;
 #[macro_use]
 extern crate lazy_static;
 
-const TFVAR_PATTERN: &str = r#"([\w_]+)\s+=\s+(.*)"#;
-const VAR_DECLARATION_PATTERN: &str = r#"variable\s+"([\w_]+)"\s+\{"#;
-const VAR_USE_PATTERN: &str = r#"var\.([\w_]+)"#;
-const APP_VERSION: &str = "2019-09-1";
-
-enum Filetype {
-    TfFile,
-    TfVarsFile,
+lazy_static! {
+    static ref DEFINTION_REGEX: Regex = Regex::new(r#"variable\s+"([\w_]+)"\s+\{"#).unwrap();
+    static ref VALUE_REGEX: Regex = Regex::new(r#"([\w_]+)\s+=\s+(.*)"#).unwrap();
+    static ref USE_REGEX: Regex = Regex::new(r#"var\.([\w_]+)"#).unwrap();
 }
 
-impl Filetype {
-    fn ext(&self) -> String {
+#[derive(Debug, Clone, Copy)]
+enum EntryType {
+    Definition,
+    Use,
+    ValueDefinition,
+}
+
+impl EntryType {
+    fn regex(&self) -> &Regex {
         match self {
-            Filetype::TfFile => "tf".to_string(),
-            Filetype::TfVarsFile => "tfvars".to_string(),
-        }
-    }
-
-    fn files_in(&self, dir: &Path) -> Result<Vec<PathBuf>, String> {
-        let path_buf = dir.join(format!("*.{}", self.ext()));
-
-        let g = match path_buf.as_path().to_str() {
-            Some(glob_path) => Ok(glob_path.to_string()),
-            None => return Err("Failed to construct glob expression".to_string()),
-        };
-
-        let g = match g {
-            Ok(g) => g,
-            Err(e) => return Err(e),
-        };
-
-        match glob(&g) {
-            Ok(files) => Ok(files.filter(|f| f.is_ok()).map(|f| f.unwrap()).collect()),
-            Err(err) => Err(err.to_string()),
+            Self::Definition => &DEFINTION_REGEX,
+            Self::Use => &USE_REGEX,
+            Self::ValueDefinition => &VALUE_REGEX,
         }
     }
 }
 
 #[derive(Debug)]
 struct Variable {
+    entry_type: EntryType,
     name: String,
-    defined_in: String,
+    at: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum FileType {
+    Source,
+    Vars,
+}
+
+impl FileType {
+    fn ext(self) -> String {
+        match self {
+            FileType::Source => "tf".to_string(),
+            FileType::Vars => "tfvars".to_string(),
+        }
+    }
 }
 
 #[derive(Debug)]
-struct VarUse {
-    name: String,
-    found_in: String,
+struct File {
+    file_type: FileType,
+    path: String,
+    contents: String,
 }
 
-#[derive(Debug)]
-struct TfVar {
-    name: String,
-    defined_in: String,
-}
-
-fn find_tfvars(file: &Path, text: &str) -> Vec<TfVar> {
-    lazy_static! {
-        static ref TFVARS_REGEX: Regex =
-            Regex::new(TFVAR_PATTERN).expect("Failed to compile variable declaration regex");
+impl File {
+    fn files_in(dir: &Path) -> Result<Vec<Result<File, String>>, String> {
+        let mut files = Self::get_files(FileType::Source, dir)?;
+        files.extend(Self::get_files(FileType::Vars, dir)?);
+        Ok(files)
     }
-    TFVARS_REGEX
-        .captures_iter(text)
-        .filter(|cap| cap.len() > 1)
-        .map(|cap| TfVar {
-            name: cap[1].to_string(),
-            defined_in: file.to_str().unwrap_or("unknown").to_string(),
-        })
-        .collect()
-}
 
-fn find_var_definitions(file: &Path, text: &str) -> Vec<Variable> {
-    lazy_static! {
-        static ref VAR_DECLARATION_REGEX: Regex = Regex::new(VAR_DECLARATION_PATTERN)
-            .expect("Failed to compile variable declaration regex");
-    }
-    VAR_DECLARATION_REGEX
-        .captures_iter(text)
-        .filter(|cap| cap.len() > 1)
-        .map(|cap| Variable {
-            name: cap[1].to_string(),
-            defined_in: file.to_str().unwrap_or("unknown").to_string(),
-        })
-        .collect()
-}
+    fn get_files(file_type: FileType, dir: &Path) -> Result<Vec<Result<File, String>>, String> {
+        let path_buf = dir.join(format!("*.{}", file_type.ext()));
 
-fn find_var_usages(file: &Path, text: &str) -> Vec<VarUse> {
-    lazy_static! {
-        static ref VAR_USE_REGEX: Regex =
-            Regex::new(VAR_USE_PATTERN).expect("Failed to compile variable usage regex");
+        let g = match path_buf.as_path().to_str() {
+            Some(glob_path) => glob_path.to_string(),
+            None => return Err("Failed to construct glob expression".to_string()),
+        };
+
+        let file_paths = match glob(&g) {
+            Ok(files) => files.filter_map(Result::ok),
+            Err(err) => return Err(err.to_string()),
+        };
+
+        let files = file_paths
+            .map(|path| {
+                let path_str = path
+                    .clone()
+                    .into_os_string()
+                    .into_string()
+                    .unwrap_or_else(|_| "unknown path".to_string());
+                if let Ok(contents) = fs::read_to_string(path) {
+                    let file = File {
+                        file_type,
+                        path: path_str.to_string(),
+                        contents,
+                    };
+                    Ok(file)
+                } else {
+                    Err(format!("Error: could not read file {}", path_str))
+                }
+            })
+            .collect();
+        Ok(files)
     }
-    VAR_USE_REGEX
-        .captures_iter(text)
-        .filter(|cap| cap.len() > 1)
-        .map(|cap| VarUse {
-            name: cap[1].to_string(),
-            found_in: file.to_str().unwrap_or("unknown").to_string(),
-        })
-        .collect()
+
+    fn get_var_entries(&self, entry_type: EntryType) -> Vec<Variable> {
+        entry_type
+            .regex()
+            .captures_iter(&self.contents)
+            .filter(|cap| cap.len() > 1)
+            .map(|cap| Variable {
+                name: cap[1].to_string(),
+                at: self.path.clone(),
+                entry_type,
+            })
+            .collect()
+    }
 }
 
 fn validate_and_get_path(wd: &str) -> Result<Box<&Path>, String> {
@@ -124,14 +131,30 @@ fn validate_and_get_path(wd: &str) -> Result<Box<&Path>, String> {
     Ok(Box::new(wd_path))
 }
 
+fn report_unsued(unused: &[&Variable]) {
+    let by_file = unused.iter().group_by(|v| &v.at);
+    for (file, vars) in &by_file {
+        println!("In {}:", file);
+        for v in vars {
+            let prefix = match v.entry_type {
+                EntryType::Definition => "Unused definition",
+                EntryType::ValueDefinition => "Unused value for",
+                _ => "Shouldn't be there",
+            };
+            println!(" * {} {}", prefix, v.name);
+        }
+        println!();
+    }
+}
+
 fn main() {
     let matches = App::new("tf-unused")
-        .version(APP_VERSION)
+        .version(env!("CARGO_PKG_VERSION"))
         .about("Find unused variables in terraform files")
         .author("Semyon Novikov <nsa@bedlam.io>")
         .arg(
             Arg::with_name("INPUT")
-                .help("Sets directory to check")
+                .help("Directory to validate")
                 .required(false)
                 .index(1),
         )
@@ -143,63 +166,62 @@ fn main() {
         process::exit(1)
     });
 
-    let mut definitions: Vec<Variable> = Vec::new();
-    let mut usages: Vec<VarUse> = Vec::new();
-    let files = Filetype::TfFile.files_in(&wd_path).unwrap_or_else(|e| {
-        println!("{}", e);
-        process::exit(1);
-    });
-
-    for tf_file in files {
-        if let Ok(content) = fs::read_to_string(&tf_file) {
-            definitions.append(&mut find_var_definitions(&tf_file, &content));
-            usages.append(&mut find_var_usages(&tf_file, &content));
-        } else {
-            println!("Cant open file, skipping: {:?}", &tf_file);
-        }
-    }
-
-    let unused_vars: Vec<&Variable> = definitions
-        .iter()
-        .filter(|var| usages.iter().find(|usage| var.name == usage.name).is_none())
+    let files: Vec<_> = File::files_in(&wd_path)
+        .unwrap_or_else(|e| {
+            println!("{}", e);
+            process::exit(1);
+        })
+        .into_iter()
+        .filter_map(|f| match f {
+            Ok(f) => Some(f),
+            Err(e) => {
+                println!("{}", e);
+                None
+            }
+        })
         .collect();
 
-    for unused in unused_vars.iter() {
-        println!(
-            "Unused variable \"{}\" defined in {}",
-            unused.name, unused.defined_in
-        );
-    }
-
-    let mut tf_vars: Vec<TfVar> = Vec::new();
-    let tf_var_files = Filetype::TfVarsFile.files_in(&wd_path).unwrap_or_else(|e| {
-        println!("{}", e);
-        process::exit(1);
-    });
-
-    for tfvar_file in tf_var_files {
-        if let Ok(content) = fs::read_to_string(&tfvar_file) {
-            tf_vars.append(&mut find_tfvars(&tfvar_file, &content));
-        } else {
-            println!("Cant open file, skipping: {:?}", tfvar_file);
-        }
-    }
-
-    let unused_tfvars = tf_vars
+    let definitions: Vec<_> = files
         .iter()
-        .filter(|tfvar| definitions.iter().find(|d| d.name == tfvar.name).is_none())
-        .group_by(|tfvar| &tfvar.defined_in);
+        .filter(|f| f.file_type == FileType::Source)
+        .map(|f| f.get_var_entries(EntryType::Definition))
+        .flatten()
+        .collect();
 
-    for (file, vars) in &unused_tfvars {
-        println!("{}:", file);
-        for v in vars {
-            println!(" - {}", v.name);
-        }
-        println!();
-    }
+    let uses: Vec<_> = files
+        .iter()
+        .filter(|f| f.file_type == FileType::Source)
+        .map(|f| f.get_var_entries(EntryType::Use))
+        .flatten()
+        .collect();
 
-    if !unused_vars.is_empty() || unused_tfvars.into_iter().count() > 0 {
-        process::exit(1)
+    let values: Vec<_> = files
+        .iter()
+        .filter(|f| f.file_type == FileType::Vars)
+        .map(|f| f.get_var_entries(EntryType::ValueDefinition))
+        .flatten()
+        .collect();
+
+    let unused: Vec<_> = definitions
+        .iter()
+        .filter(|def| uses.iter().find(|inst| inst.name == def.name).is_none())
+        .collect();
+
+    let unused_vals: Vec<_> = values
+        .iter()
+        .filter(|val| {
+            definitions
+                .iter()
+                .find(|def| def.name == val.name)
+                .is_none()
+        })
+        .collect();
+
+    report_unsued(&unused);
+    report_unsued(&unused_vals);
+
+    if !&unused.is_empty() || !&unused_vals.is_empty() {
+        process::exit(1);
     }
 }
 
@@ -209,7 +231,7 @@ mod tests {
 
     #[test]
     fn test_tfvars_pattern() {
-        let re = Regex::new(TFVAR_PATTERN).unwrap();
+        let re = &VALUE_REGEX;
         let test_string = r#"
         one = 42
         two = "booooring"
@@ -226,7 +248,7 @@ mod tests {
 
     #[test]
     fn test_variable_pattern() {
-        let re = Regex::new(VAR_DECLARATION_PATTERN).unwrap();
+        let re = &DEFINTION_REGEX;
         let test_string = r#"
         variable "surprisingly_important_variable" {
             default = 42
@@ -241,7 +263,7 @@ mod tests {
     #[test]
     fn test_variable_use_pattern() {
         let test_string = r#"something = "${foo(var.very_important_variable)}""#;
-        let re = Regex::new(VAR_USE_PATTERN).unwrap();
+        let re = &USE_REGEX;
 
         assert!(re.is_match(test_string));
 

@@ -20,7 +20,7 @@ lazy_static! {
 enum EntryType {
     Definition,
     Use,
-    ValueDefinition,
+    Value,
 }
 
 impl EntryType {
@@ -28,7 +28,7 @@ impl EntryType {
         match self {
             Self::Definition => &DEFINTION_REGEX,
             Self::Use => &USE_REGEX,
-            Self::ValueDefinition => &VALUE_REGEX,
+            Self::Value => &VALUE_REGEX,
         }
     }
 }
@@ -138,7 +138,7 @@ fn report_unsued(unused: &[&Variable]) {
         for v in vars {
             let prefix = match v.entry_type {
                 EntryType::Definition => "Unused definition",
-                EntryType::ValueDefinition => "Unused value for",
+                EntryType::Value => "Unused value for",
                 _ => "Shouldn't be there",
             };
             println!(" * {} {}", prefix, v.name);
@@ -198,7 +198,7 @@ fn main() {
     let values: Vec<_> = files
         .iter()
         .filter(|f| f.file_type == FileType::Vars)
-        .map(|f| f.get_var_entries(EntryType::ValueDefinition))
+        .map(|f| f.get_var_entries(EntryType::Value))
         .flatten()
         .collect();
 

@@ -139,7 +139,7 @@ fn report_unsued(unused: &[&Variable]) {
             let prefix = match v.entry_type {
                 EntryType::Definition => "Unused definition",
                 EntryType::Value => "Unused value for",
-                _ => "Shouldn't be there",
+                _ => unreachable!(),
             };
             println!(" * {} {}", prefix, v.name);
         }

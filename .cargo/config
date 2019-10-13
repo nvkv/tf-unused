@@ -1,4 +1,1 @@
 # -*- mode: toml -*-
-
-[build]
-rustflags = ["-C", "link-args=-s"]

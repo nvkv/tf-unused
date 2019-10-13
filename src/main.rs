@@ -166,7 +166,7 @@ fn main() {
         process::exit(1)
     });
 
-    let files: Vec<_> = File::files_in(&wd_path)
+    let files: &Vec<_> = &File::files_in(&wd_path)
         .unwrap_or_else(|e| {
             println!("{}", e);
             process::exit(1);

@@ -39,3 +39,13 @@ In tests/fixtures/has_unused/some.tfvars:
 0
 ```
 
+## Using tf-unused with pre-commit
+
+Requires [rust and cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html).
+
+Add this to your `.pre-commit-config.yaml`:
+
+    -   repo: https://github.com/mijdavis2/tf-unused
+        sha: ''  # Use the sha / tag you want to point at
+        hooks:
+        -   id: tf_unused

@@ -1,0 +1,65 @@
+repos:
+# Global checks
+- repo: https://github.com/AleksaC/hadolint-py
+  rev: 'ecf2d2c004e7a753f48e44952a81d7c9cf1f202c' # v2.10.0
+  hooks:
+  - id: hadolint
+    args:
+    - "--ignore"
+    # DL3008: apt version locking, which is not feasable to stay up to date on.
+    - "DL3008"
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: 6e2418c5521b7d606e72914dced3253f9ace1205  # v3.4.0
+  hooks:
+  - id: check-added-large-files
+  - id: check-ast
+  - id: check-byte-order-marker
+  - id: check-builtin-literals
+  - id: check-case-conflict
+  - id: check-docstring-first
+  - id: check-executables-have-shebangs
+  - id: check-json
+  - id: check-merge-conflict
+  - id: check-symlinks
+  - id: check-toml
+  - id: check-vcs-permalinks
+  - id: check-xml
+  - id: check-vcs-permalinks
+  - id: check-yaml
+    # Unsafe (check syntax only) as tool can't evaluate all CF template contructors
+    args: ["--unsafe"]
+  - id: debug-statements
+  - id: destroyed-symlinks
+  - id: double-quote-string-fixer
+  - id: end-of-file-fixer
+  - id: fix-byte-order-marker
+  - id: fix-encoding-pragma
+  - id: forbid-new-submodules
+  - id: mixed-line-ending
+  - id: name-tests-test
+    exclude: "tests/helpers.py"
+  - id: pretty-format-json
+    args: ["--autofix", "--indent=4"]
+  - id: sort-simple-yaml
+  - id: trailing-whitespace
+- repo: https://github.com/Yelp/detect-secrets
+  rev: c09b466f7600e35e093c5da0437eca74a7c7a459 #v0.14.3
+  hooks:
+  - id: detect-secrets
+    exclude: ^(.*_build.txt|go.mod|go.sum|.*poetry.lock|.*.pre-commit-config.yaml|Cargo.lock)
+- repo: https://github.com/detailyang/pre-commit-shell.git
+  rev: 062f0b028ae65827e04f91c1e6738cfcbe9b337f #v1.0.6
+  hooks:
+  - id: shell-lint
+# Rust
+- repo: https://github.com/doublify/pre-commit-rust
+  rev: eeee35a #v1.0
+  hooks:
+  - id: fmt
+  - id: cargo-check
+# Global doctoc
+- repo: https://github.com/thlorenz/doctoc
+  rev: 2faf56387f7d512c5c2e0ad126c3dc15b78f7615  # v2.0.0
+  hooks:
+  - id: doctoc
+    exclude: CHANGELOG.md

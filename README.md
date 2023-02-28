@@ -1,8 +1,19 @@
+> Forked from https://github.com/nvkv/tf-unused and migrated to docker-based pre-commit hook by [mijdavis2](https://github.com/mijdavis2).
+
 # tf-unused
 
-[![Build Status](https://travis-ci.org/nvkv/tf-unused.svg?branch=master)](https://travis-ci.org/nvkv/tf-unused)
-
 Find unused variables in terraform module.
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Installation](#installation)
+- [Usage](#usage)
+- [Examples](#examples)
+- [Using with pre-commit](#using-with-pre-commit)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Installation
 
@@ -39,7 +50,7 @@ In tests/fixtures/has_unused/some.tfvars:
 0
 ```
 
-## Using tf-unused with pre-commit
+## Using with pre-commit
 
 Requires [rust and cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html).
 

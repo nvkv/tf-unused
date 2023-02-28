@@ -1,7 +1,7 @@
 [package]
 name = "tf-unused"
-version = "1.201909.7"
-authors = ["Semyon Novikov <nsa@bedlam.io>"]
+version = "0.2.0"
+authors = ["Semyon Novikov <nsa@bedlam.io>", "mijdavis2"]
 edition = "2018"
 
 [profile.release]

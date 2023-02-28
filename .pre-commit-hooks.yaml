@@ -1,7 +1,7 @@
-- id: tf_unused
+- id: tf-unused
   name: tf-unused
-  description: Checks for unused variables
+  description: Checks for unused variables in tf modules
   entry: tf-unused
-  language: rust
+  language: docker
   always_run: true
   pass_filenames: false
